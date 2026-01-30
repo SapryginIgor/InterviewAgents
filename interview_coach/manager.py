@@ -126,16 +126,15 @@ class InterviewManager:
         print("-" * 50 + "\n")
 
     def _read_multiline_input(self) -> str:
-        """Read lines until an empty line; return joined text (strip empty trailing lines)."""
+        """Read lines until EOF (Ctrl+D). User types as much as they want, then Ctrl+D to send."""
         lines = []
-        first = True
-        while True:
-            prompt = "👤 Вы: " if first else "    "  # indent continuation lines
-            line = input(prompt)
-            if line.strip() == "":
-                break
-            lines.append(line)
-            first = False
+        try:
+            while True:
+                prompt = "👤 Вы: " if not lines else "    "
+                line = input(prompt)
+                lines.append(line)
+        except EOFError:
+            pass
         return "\n".join(lines).strip()
 
     def _generate_final_feedback(self) -> str:
@@ -176,7 +175,7 @@ class InterviewManager:
         print(f"Опыт: {self.candidate.experience}")
         print("=" * 60)
         print("Введите «стоп» или «stop», чтобы завершить интервью и получить обратную связь.")
-        print("Для ответа: вводите текст, Enter — новая строка, пустая строка (Enter дважды) — отправить.")
+        print("Для ответа: вводите текст (Enter — новая строка), затем Ctrl+D — отправить ответ.")
         print("=" * 60 + "\n")
         
         # Start interview
@@ -189,6 +188,7 @@ class InterviewManager:
                 user_input = self._read_multiline_input()
                 if not user_input:
                     continue
+                print("-" * 50)
                 
                 response, is_finished = self.process_response(user_input)
                 
