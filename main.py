@@ -8,6 +8,7 @@ Usage:
 """
 
 import argparse
+import os
 import sys
 from interview_coach import InterviewManager
 
@@ -44,6 +45,9 @@ def main():
         "Изучаю программирование, пет-проекты"
     )
     
+    # Name in log file (e.g. your real name for competition); if unset, same as name above
+    log_name = os.environ.get("LOG_PARTICIPANT_NAME", "").strip() or name
+
     # Initialize interview manager
     try:
         manager = InterviewManager(
@@ -51,7 +55,8 @@ def main():
             position=position,
             grade=grade,
             experience=experience,
-            verbose=not args.quiet
+            verbose=not args.quiet,
+            log_participant_name=log_name if log_name != name else None,
         )
     except Exception as e:
         print(f"\n❌ Ошибка при запуске интервью: {e}")

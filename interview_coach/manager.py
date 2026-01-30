@@ -45,8 +45,12 @@ class InterviewManager:
         grade: str,
         experience: str,
         verbose: bool = True,
+        log_participant_name: Optional[str] = None,
     ):
-        """Initialize the interview manager."""
+        """Initialize the interview manager.
+        candidate_name: used in the interview (interviewer addresses the candidate by this).
+        log_participant_name: name saved in the log file (e.g. your real name for competition); if None, uses candidate_name.
+        """
         self.llm = LLMClient()
         self.candidate = CandidateProfile(
             name=candidate_name,
@@ -55,13 +59,14 @@ class InterviewManager:
             experience=experience,
         )
         self.verbose = verbose
+        participant_for_log = log_participant_name if log_participant_name else candidate_name
 
         self.interviewer = InterviewerAgent(self.llm)
         self.observer = ObserverAgent(self.llm)
         self.feedback_generator = FeedbackGenerator(self.llm)
 
         self.logger = InterviewLogger(
-            participant_name=candidate_name,
+            participant_name=participant_for_log,
             position=position,
             grade=grade,
             experience=experience,

@@ -98,6 +98,9 @@ OPENAI_MODEL=gpt-4o
 
 # Опционально: свой base URL (прокси и т.п.)
 # OPENAI_BASE_URL=https://api.openai.com/v1
+
+# Имя в файле лога (participant_name); интервьюер по-прежнему обращается по имени, введённому при старте
+# LOG_PARTICIPANT_NAME=Igor
 ```
 
 ## Запуск
