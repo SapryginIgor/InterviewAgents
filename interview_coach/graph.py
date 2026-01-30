@@ -220,7 +220,7 @@ def _make_summarize_node(
         )
         feedback_text = feedback_generator.format_feedback_text(feedback)
         full_feedback = (
-            feedback_text + "\n\n## DETAILED ANALYSIS\n\n" + feedback.raw_feedback
+            feedback_text + "\n\n## ПОДРОБНЫЙ АНАЛИЗ\n\n" + feedback.raw_feedback
         )
         logger.set_final_feedback(full_feedback)
         return {"final_feedback": full_feedback}

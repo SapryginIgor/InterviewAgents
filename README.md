@@ -1,201 +1,170 @@
-# Multi-Agent Interview Coach
+# Тренер по техническим интервью
 
-A multi-agent AI system that conducts technical interviews, featuring hidden reflection between agents and structured feedback generation.
+Мультиагентная система для проведения технических собеседований: два агента (Интервьюер и Наблюдатель), скрытая рефлексия между ними и структурированная обратная связь по итогам.
 
-## Architecture
+## Архитектура
 
-The system implements a two-agent architecture:
+Система построена на двух агентах и графе состояний (LangGraph):
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Interview Session                         │
+│                    Сессия интервью                            │
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
-│   ┌──────────────┐    Internal     ┌──────────────┐        │
-│   │  OBSERVER    │◄───Guidance────►│  INTERVIEWER │        │
-│   │   Agent      │                 │    Agent     │        │
-│   │              │                 │              │        │
-│   │ • Analyzes   │                 │ • Asks       │        │
-│   │   responses  │                 │   questions  │        │
-│   │ • Detects    │                 │ • Adapts     │        │
-│   │   hallucin.  │                 │   difficulty │        │
-│   │ • Suggests   │                 │ • Handles    │        │
-│   │   next steps │                 │   off-topic  │        │
-│   └──────────────┘                 └──────────────┘        │
-│          │                                │                 │
-│          │         Hidden from            │                 │
-│          │         Candidate              │                 │
-│          ▼                                ▼                 │
-│   ┌─────────────────────────────────────────┐              │
-│   │           Interview Logger               │              │
-│   │  (Records visible + internal thoughts)   │              │
-│   └─────────────────────────────────────────┘              │
+│   ┌──────────────┐    Внутренние     ┌──────────────┐       │
+│   │  НАБЛЮДАТЕЛЬ │◄───подсказки─────►│ ИНТЕРВЬЮЕР   │       │
+│   │   (Observer) │                   │ (Interviewer)│       │
+│   │              │                   │              │       │
+│   │ • Анализ     │                   │ • Задаёт     │       │
+│   │   ответов    │                   │   вопросы    │       │
+│   │ • Оценка     │                   │ • Меняет     │       │
+│   │   качества   │                   │   сложность  │       │
+│   │ • Подсказки  │                   │ • Уводит     │       │
+│   │   интервьюеру│                   │   от оффтопа  │       │
+│   └──────────────┘                   └──────────────┘       │
+│          │                                │                  │
+│          │         Скрыто от             │                  │
+│          │         кандидата             │                  │
+│          ▼                                ▼                  │
+│   ┌─────────────────────────────────────────┐               │
+│   │           Логгер интервью                │               │
+│   │  (видимые реплики + внутренние заметки)  │               │
+│   └─────────────────────────────────────────┘               │
 │                        │                                    │
 │                        ▼                                    │
-│              interview_log.json                             │
+│   logs/interview_log_<имя>_<timestamp>.json                 │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-## Features
+## Возможности
 
-### System Properties (as per specification)
+1. **Разделение ролей**: два агента с разными задачами  
+   - **Наблюдатель**: анализирует ответы, оценивает качество и факты, даёт подсказки интервьюеру  
+   - **Интервьюер**: ведёт диалог, задаёт вопросы, адаптирует сложность
 
-1. **Role Specialization**: Two distinct agents with separate responsibilities
-   - Observer: Analyzes responses, checks facts, detects hallucinations
-   - Interviewer: Conducts dialogue, adapts questions
+2. **Скрытая рефлексия**: перед каждым ответом интервьюера  
+   - Наблюдатель анализирует ответ кандидата  
+   - Формирует рекомендации для интервьюера  
+   - Всё логируется, но кандидату не показывается
 
-2. **Hidden Reflection**: Internal dialogue before each response
-   - Observer analyzes candidate's answer
-   - Provides guidance to Interviewer
-   - All logged but hidden from candidate
+3. **Контекст**: полная история диалога  
+   - Агенты учитывают предыдущие реплики  
+   - Избегают повторения вопросов  
+   - Отслеживают тему разговора
 
-3. **Context Awareness**: Full conversation history maintained
-   - Agents remember previous exchanges
-   - No repeated questions
-   - Topic tracking
+4. **Адаптивность**: динамическая сложность  
+   - Усложнение вопросов при сильных ответах  
+   - Упрощение при затруднениях
 
-4. **Adaptability**: Dynamic difficulty adjustment
-   - Questions get harder if candidate excels
-   - Questions simplify if candidate struggles
+5. **Устойчивость к краевым случаям**  
+   - Определение ухода от темы и возврат к ней  
+   - Оценка достоверности ответов  
+   - Учёт вопросов кандидата к интервьюеру
 
-5. **Robustness**: Handles edge cases
-   - Off-topic detection and redirection
-   - Hallucination detection and correction
-   - Candidate questions are answered
+### Структура обратной связи
 
-### Feedback Structure
+Итоговый отчёт включает:
 
-Final feedback includes:
-- **Decision**: Assessed grade, hiring recommendation, confidence score
-- **Technical Review**: Confirmed skills, knowledge gaps with correct answers
-- **Soft Skills**: Clarity, honesty, engagement assessment
-- **Personal Roadmap**: Specific topics to study
+- **Решение**: оценённый грейд, рекомендация по найму (Точно нанимаем / Нанимаем / Не нанимаем), уверенность (0–100%)
+- **Технический разбор**: подтверждённые навыки, пробелы в знаниях с правильными ответами
+- **Гибкие навыки**: ясность, честность, вовлечённость
+- **Персональный план развития**: что изучить или повторить
 
-## Installation
+## Установка
 
 ```bash
-# Clone the repository
-git clone <repo-url>
+# Клонировать репозиторий
+git clone <url-репозитория>
 cd InterviewAgents
 
-# Install dependencies
+# Установить зависимости
 pip install -r requirements.txt
 
-# Configure API keys
+# Настроить окружение
 cp .env.example .env
-# Edit .env with your API key
+# Отредактировать .env — указать API-ключ и модель
 ```
 
-## Configuration
+## Настройка
 
-Edit `.env` file:
+Файл `.env`:
 
 ```bash
-# OpenAI API Key
+# Ключ OpenAI API
 OPENAI_API_KEY=sk-your-key-here
 
-# Optional: Custom base URL (for proxies)
-# OPENAI_BASE_URL=https://api.openai.com/v1
-
-# Model (defaults to gpt-4o)
+# Модель (по умолчанию gpt-4o)
 OPENAI_MODEL=gpt-4o
+
+# Опционально: свой base URL (прокси и т.п.)
+# OPENAI_BASE_URL=https://api.openai.com/v1
 ```
 
-## Usage
+## Запуск
 
-### Interactive Mode
+### Интерактивный режим
 
 ```bash
-# With prompts for all inputs
+# Запуск с запросом всех данных у пользователя
 python main.py
 
-# With command-line arguments
-python main.py --name "Alex" --position "Backend Developer" --grade "Junior" --experience "Django pet projects, some SQL"
-
-# Hide internal thoughts (cleaner output)
+# Скрыть внутренние заметки агентов (только реплики интервьюера)
 python main.py --quiet
+# или
+python main.py -q
 
-# Specify output file
-python main.py --output interview_log.json
+# Указать путь к файлу лога
+python main.py --output путь/к/файлу.json
+# или
+python main.py -o путь/к/файлу.json
 ```
 
-### Commands During Interview
+При запуске программа запросит: имя, целевую позицию, грейд (Junior/Middle/Senior) и краткое описание опыта.
 
-- Type your responses normally
-- Say **"стоп"** or **"stop"** to end the interview and get feedback
+### Во время интервью
 
-## Output Format
+- Вводите ответы с клавиатуры  
+- **Enter** — новая строка, **пустая строка** (дважды Enter) — отправить ответ  
+- Для завершения и получения обратной связи введите одно из:  
+  **«стоп»**, **«stop»**, **«стоп интервью»**, **«давай фидбэк»** и т.п.
 
-The system generates `interview_log_<name>_<timestamp>.json`:
+## Формат вывода
 
-```json
-{
-  "participant_name": "Alex",
-  "position": "Backend Developer",
-  "target_grade": "Junior",
-  "experience": "Django pet projects",
-  "timestamp": "2024-01-15T10:30:00",
-  "turns": [
-    {
-      "turn_id": 1,
-      "agent_visible_message": "Hello! Tell me about your experience...",
-      "user_message": "Hi, I'm Alex, I know Python and SQL...",
-      "internal_thoughts": "[Observer]: Candidate is a beginner. [Interviewer]: Will ask about basic data types."
-    }
-  ],
-  "final_feedback": "..."
-}
-```
+Лог сохраняется в `logs/interview_log_<имя>_<timestamp>.json` (или по пути из `--output`):
 
-## Project Structure
+- `participant_name`, `position`, `target_grade`, `experience`, `timestamp`
+- `turns` — массив ходов: `turn_id`, `agent_visible_message`, `user_message`, `internal_thoughts` (длинные тексты хранятся как массивы строк)
+- `final_feedback` — итоговый отчёт в виде массива строк
+
+## Структура проекта
 
 ```
 InterviewAgents/
-├── main.py                    # CLI entry point
-├── requirements.txt           # Dependencies
-├── .env.example              # Environment template
+├── main.py                 # Точка входа CLI
+├── requirements.txt        # Зависимости
+├── .env.example            # Шаблон переменных окружения
 ├── interview_coach/
 │   ├── __init__.py
-│   ├── llm.py                # OpenAI API client
-│   ├── agents.py             # Interviewer & Observer agents
-│   ├── manager.py            # Interview orchestration
-│   ├── logger.py             # JSON logging
-│   └── feedback.py           # Feedback generation
+│   ├── llm.py              # Клиент OpenAI
+│   ├── agents.py           # Агенты Интервьюер и Наблюдатель
+│   ├── graph.py            # Граф состояний (LangGraph)
+│   ├── manager.py          # Оркестрация интервью
+│   ├── logger.py           # Запись лога в JSON
+│   └── feedback.py         # Генерация структурированной обратной связи
+├── logs/                   # Каталог логов по умолчанию
 └── README.md
 ```
 
-## Testing Scenarios
+## Сценарии проверки
 
-The system is designed to handle:
+Система рассчитана на:
 
-1. **Normal Q&A**: Standard technical questions and answers
-2. **Hallucination Test**: False claims (e.g., "Python 4.0 will remove for loops")
-3. **Off-topic**: Attempts to change the subject
-4. **Role Reversal**: Candidate asking questions back
-5. **Difficulty Adaptation**: Adjusting to candidate's level
+1. Обычный вопрос–ответ по техническим темам  
+2. Проверку на «галлюцинации» (неверные утверждения)  
+3. Уход от темы и возврат к ней  
+4. Вопросы кандидата интервьюеру  
+5. Адаптацию сложности под уровень кандидата  
 
-## Extending the System
-
-### Adding New Agents
-
-Create a new agent class in `agents.py` following the pattern:
-
-```python
-class NewAgent:
-    SYSTEM_PROMPT = "..."
-    
-    def __init__(self, llm: LLMClient):
-        self.llm = llm
-    
-    def process(self, ...):
-        # Agent logic
-        pass
-```
-
-### Customizing Topics
-
-Modify the `InterviewerAgent.SYSTEM_PROMPT` to focus on specific technologies or domains.
-
-## License
+## Лицензия
 
 MIT
